@@ -54,10 +54,15 @@ export default async function Page() {
               </Link>
             </div>
           </div>
-          <div className="bg-background p-6 rounded-lg shadow text-center">
+          <div className="p-6 rounded-lg text-center">
             <h3 className="font-semibold mb-2">Not following anyone</h3>
             <p className="text-gray-600 mb-4">Follow authors to see their Pieces here.</p>
-            <Button>Explore Writing</Button>
+            <Button
+              className="bg-background text-foreground hover:bg-background/90 rounded-lg border"
+              size="sm"
+            >
+              Explore Writing
+            </Button>
           </div>
         </div>
 

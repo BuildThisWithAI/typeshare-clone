@@ -53,7 +53,10 @@ export function SiteHeader() {
               <Bell className="h-5 w-5 text-gray-400" />
             </Button> */}
             <Link href="/new">
-              <Button>
+              <Button
+                className="rounded-lg bg-[#54A056] text-white hover:bg-green-700 font-semibold"
+                size="sm"
+              >
                 <PlusCircleIcon className="inline-flex mr-2 size-4" />
                 New Piece
               </Button>
