@@ -1,6 +1,7 @@
 export const siteConfig = {
-  name: "Boilerplate107",
-  description: "Get started with Nextjs, Shadcn UI, TailwindCSS, Clerk, Drizzle ORM, and Turso DB.",
-  url: "https://boilerplate107.vercel.app",
-  github: "https://github.com/noelrohi/boilerplate107",
+  name: "Typeshare Clone",
+  description:
+    "A clone of Typeshare built with Nextjs, Shadcn UI, TailwindCSS, Clerk, Drizzle ORM, and Turso DB.",
+  url: "https://typeshare-alpha.vercel.app",
+  github: "https://github.com/noelrohi/typeshare-clone",
 } as const;
