@@ -1,7 +1,15 @@
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarImage, AvatarFallback } from "@radix-ui/react-avatar";
-import { Signal, MoreHorizontal } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { db } from "@/db";
+import type { SelectPost, SelectUserDetails } from "@/db/schema";
+import { currentUser } from "@clerk/nextjs/server";
+import { UTCDate } from "@date-fns/utc";
+import { formatDistance } from "date-fns";
+import { MessageCircle, MoreHorizontal, RadioIcon, UserRoundPenIcon } from "lucide-react";
+import Link from "next/link";
+import { Suspense } from "react";
 
 export default function Page() {
   return (
@@ -9,19 +17,9 @@ export default function Page() {
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Left Sidebar */}
         <div className="w-full lg:w-1/4">
-          <Card className="mb-6">
-            <CardContent className="pt-6">
-              <Avatar className="h-20 w-20 mb-4">
-                <AvatarImage src="/placeholder-avatar.jpg" alt="N" />
-                <AvatarFallback>N</AvatarFallback>
-              </Avatar>
-              <h2 className="text-2xl font-bold mb-2">Noel Rohi Garcia</h2>
-              <p className="text-gray-600 mb-4">Welcome to my Typeshare Social Blog!</p>
-              <Button variant="outline" className="w-full">
-                Edit Profile
-              </Button>
-            </CardContent>
-          </Card>
+          <Suspense fallback={<UserCardSkeleton />}>
+            <UserCard />
+          </Suspense>
           <Card>
             <CardHeader>
               <CardTitle className="flex justify-between items-center">
@@ -45,39 +43,9 @@ export default function Page() {
 
         {/* Main Content */}
         <div className="w-full lg:w-1/2">
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                <Avatar className="h-10 w-10 mr-3">
-                  <AvatarImage src="/placeholder-avatar.jpg" alt="N" />
-                  <AvatarFallback>N</AvatarFallback>
-                </Avatar>
-                Noel Rohi Garcia
-                <span className="text-sm text-gray-500 ml-2">9m ago</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <h3 className="text-xl font-semibold mb-2">Headline</h3>
-              <p className="text-gray-600 mb-4">ok</p>
-              <div className="flex items-center justify-between text-sm text-gray-500">
-                <div className="flex items-center space-x-4">
-                  <span className="flex items-center">
-                    <Signal className="h-4 w-4 mr-1 text-red-500" />
-                    20
-                  </span>
-                  <span>0 comments</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Button variant="ghost" size="sm">
-                    Blog Post
-                  </Button>
-                  <Button variant="ghost" size="icon">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <Suspense fallback={<PostListSkeleton />}>
+            <PostList />
+          </Suspense>
         </div>
 
         {/* Right Sidebar */}
@@ -105,5 +73,142 @@ export default function Page() {
         </div>
       </div>
     </main>
+  );
+}
+
+async function PostList() {
+  const posts = await db.query.posts.findMany({
+    where: (table, args) => args.eq(table.isDraft, false),
+  });
+  const user = await currentUser();
+  if (!user) throw new Error("User not found");
+  return (
+    <div className="space-y-2">
+      {posts.map((post) => (
+        <PostCard
+          key={post.id}
+          post={{
+            ...post,
+            userDetails: {
+              id: "",
+              createdAt: "",
+              username: user.username ?? user.id,
+              firstName: user.firstName ?? "",
+              lastName: user.lastName ?? "",
+              imageUrl: user.imageUrl ?? "",
+              clerkId: user.id,
+              bio: user.publicMetadata.bio ?? "",
+            },
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function UserCardSkeleton() {
+  return <Skeleton className="w-full h-[234px] mb-6" />;
+}
+
+function PostListSkeleton() {
+  // biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+  return Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="w-full h-[216px]" />);
+}
+
+function PostCard({
+  post,
+}: {
+  post: SelectPost & {
+    userDetails: SelectUserDetails;
+  };
+}) {
+  const initial = post.userDetails.firstName?.at(0) ?? "N";
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex justify-between">
+          <div className="flex gap-2">
+            <Avatar className="size-14">
+              <AvatarImage src={post.userDetails.imageUrl} alt={initial} />
+              <AvatarFallback>{initial}</AvatarFallback>
+            </Avatar>
+            <div className="font-normal">
+              <div className="text-base font-semibold">
+                {post.userDetails.firstName} {post.userDetails.lastName}
+              </div>
+              <div className="text-sm text-muted-foreground">{post.userDetails.bio}</div>
+              <div className="text-sm text-muted-foreground">
+                {formatDistance(new Date(post.createdAt), new UTCDate(), { addSuffix: true })}
+              </div>
+            </div>
+          </div>
+          <Button variant="outline" size="icon" className="size-6">
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <h3 className="text-xl font-semibold mb-2">{post.headline}</h3>
+        <p
+          className="text-gray-600 mb-4"
+          dangerouslySetInnerHTML={{ __html: post.content ?? "" }}
+        />
+        <div className="flex items-center justify-between text-sm text-gray-500">
+          <div className="flex items-center text-xs gap-2">
+            <Button className="flex items-center h-6 text-xs px-1" size="sm" variant="outline">
+              <RadioIcon className="size-3 mr-1 rotate-45" />
+              20
+            </Button>
+            <Button className="flex items-center h-6 text-xs px-1" size="sm" variant="outline">
+              <MessageCircle className="size-3 mr-1" />0
+            </Button>
+          </div>
+          {/* <div className="flex items-center space-x-2">
+            <Button variant="ghost" size="sm">
+              Blog Post
+            </Button>
+          </div> */}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+async function UserCard() {
+  const user = await currentUser();
+  if (!user) throw new Error("User not found");
+  const initial = user.firstName?.at(0) ?? "N";
+  const signalCount = await db.query.signals
+    .findMany({
+      where: (table, args) => args.eq(table.clerkId, user.id),
+    })
+    .then((signals) => signals.reduce((acc, signal) => acc + signal.amount, 0));
+
+  return (
+    <Card className="mb-6">
+      <CardContent className="pt-6 px-4">
+        <div className="flex justify-between">
+          <div className="relative">
+            <Avatar className="size-20">
+              <AvatarImage src={user.imageUrl} alt={initial} />
+              <AvatarFallback>{initial}</AvatarFallback>
+            </Avatar>
+            <div className="absolute bottom-0 right-0 border-background border-2 flex justify-center items-center bg-red-500 rounded-xl px-2 text-xs w-12 text-background gap-1">
+              <RadioIcon className="size-2 text-background flex-shrink-0" />
+              {signalCount}
+            </div>
+          </div>
+          <Link href={`/${user.username ?? user.id}/edit`}>
+            <Button variant="outline" className="w-full text-sm rounded-lg" size="sm">
+              <UserRoundPenIcon className="size-4 mr-2 inline-flex" /> Edit Profile
+            </Button>
+          </Link>
+        </div>
+        <h2 className="text-2xl mb-2">{user.fullName}</h2>
+        <p className="text-gray-600 mb-4">
+          {user.publicMetadata.bio ?? "Welcome to my Typeshare Social Blog!"}
+        </p>
+      </CardContent>
+    </Card>
   );
 }

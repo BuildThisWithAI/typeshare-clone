@@ -1,9 +1,30 @@
-import { Editor } from "novel";
+import { db } from "@/db";
+import EDITOR from "./editor";
+import { searchParamsCache } from "./searchParams";
 
-export default function EditorPage() {
+type PageProps = {
+  searchParams: {
+    [key: string]: string | string[] | undefined;
+  };
+};
+
+export default async function EditorPage({ searchParams }: PageProps) {
+  const { postId } = searchParamsCache.parse(searchParams);
+  let postContent = "";
+  if (postId) {
+    const post = await db.query.posts.findFirst({
+      where: (table, args) => args.eq(table.id, postId),
+    });
+    postContent = post?.content ? JSON.parse(post.content) : "";
+  }
   return (
-    <div className="flex justify-center w-full min-h-screen py-12">
-      <Editor completionApi="/api/generate" />
+    <div className="flex justify-center w-full min-h-screen px-12 py-2">
+      <EDITOR
+        headline=""
+        completionApi="/api/generate"
+        className="bg-inherit p-0 rounded-none"
+        defaultValue={postContent}
+      />
     </div>
   );
 }

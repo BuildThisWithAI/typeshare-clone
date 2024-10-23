@@ -1,30 +1,24 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { db } from "@/db";
+import { relativeTime } from "@/lib/utils";
 import { currentUser } from "@clerk/nextjs/server";
-import { Globe, Pencil } from "lucide-react";
+import { Globe, Pencil, RadioIcon } from "lucide-react";
 import Link from "next/link";
+import { Suspense } from "react";
 
 export default async function Page() {
   const user = await currentUser();
   if (!user) throw new Error("User not found");
-  const userInitial = user.fullName?.at(0) ?? "N";
+  const initial = user.firstName?.at(0) ?? "N";
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Left Sidebar */}
         <div className="w-full lg:w-1/4">
-          <div className="bg-background p-6 rounded-lg shadow mb-6">
-            <Avatar className="h-16 w-16 mb-4">
-              <AvatarImage src={user.imageUrl} alt={userInitial} />
-              <AvatarFallback>{userInitial}</AvatarFallback>
-            </Avatar>
-            <h2 className="text-xl font-bold mb-2">{user.fullName}</h2>
-            <p className="text-gray-600 mb-4">Welcome to my Typeshare Social Blog!</p>
-            <div className="flex justify-between text-sm text-gray-500">
-              <span>Signal: 0</span>
-              <span>Streak: 0</span>
-            </div>
-          </div>
+          <UserCard />
           <div className="bg-background p-6 rounded-lg shadow">
             <h3 className="font-semibold mb-4 flex justify-between items-center">
               Recent Drafts
@@ -32,10 +26,9 @@ export default async function Page() {
                 View all
               </Link>
             </h3>
-            <div className="text-sm text-gray-600">
-              <p>Untitled...</p>
-              <p className="text-xs text-gray-400">3m ago • LinkedIn Post</p>
-            </div>
+            <Suspense>
+              <RecentDrafts />
+            </Suspense>
           </div>
         </div>
 
@@ -44,8 +37,8 @@ export default async function Page() {
           <div className="bg-background p-6 rounded-lg shadow mb-6">
             <div className="flex items-center mb-4">
               <Avatar className="h-10 w-10 mr-3">
-                <AvatarImage src="/placeholder-avatar.jpg" alt="N" />
-                <AvatarFallback>N</AvatarFallback>
+                <AvatarImage src={user.imageUrl} alt={initial} />
+                <AvatarFallback>{initial}</AvatarFallback>
               </Avatar>
               <Link href="/new" className="w-full">
                 <Button variant="outline" className="w-full text-left justify-start">
@@ -57,12 +50,14 @@ export default async function Page() {
           <div className="p-6 rounded-lg text-center">
             <h3 className="font-semibold mb-2">Not following anyone</h3>
             <p className="text-gray-600 mb-4">Follow authors to see their Pieces here.</p>
-            <Button
-              className="bg-background text-foreground hover:bg-background/90 rounded-lg border"
-              size="sm"
-            >
-              Explore Writing
-            </Button>
+            <Link href="/writings">
+              <Button
+                className="bg-background text-foreground hover:bg-background/90 rounded-lg border"
+                size="sm"
+              >
+                Explore Writing
+              </Button>
+            </Link>
           </div>
         </div>
 
@@ -70,28 +65,11 @@ export default async function Page() {
         <div className="w-full lg:w-1/4">
           <div className="bg-background p-6 rounded-lg shadow mb-6">
             <h3 className="font-semibold mb-4">Leaderboard</h3>
-            <ul className="space-y-4">
-              {[
-                { name: "John Vial", signal: 3938 },
-                { name: "Shaun Coffey", signal: 3363 },
-                { name: "Dickie Bush", signal: 2957 },
-                { name: "Cody Dakota Wooten", signal: 2786 },
-                { name: "Nilo Gomez", signal: 1966 },
-              ].map((user, index) => (
-                <li key={user.name} className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <span className="font-medium mr-2">{index + 1}</span>
-                    <Avatar className="h-8 w-8 mr-2">
-                      <AvatarImage src={`/placeholder-avatar-${index + 1}.jpg`} alt={user.name} />
-                      <AvatarFallback>{user.name[0]}</AvatarFallback>
-                    </Avatar>
-                    <span>{user.name}</span>
-                  </div>
-                  <span className="text-red-500">{user.signal}</span>
-                </li>
-              ))}
-            </ul>
+            <Suspense>
+              <LeaderboardContent />
+            </Suspense>
           </div>
+
           <div className="bg-background p-6 rounded-lg shadow">
             <h3 className="font-semibold mb-4">How to Earn Signal</h3>
             <p className="text-sm text-gray-600 mb-4">
@@ -101,6 +79,7 @@ export default async function Page() {
               </Link>
               .
             </p>
+
             <ul className="space-y-2 text-sm">
               <li className="flex items-center">
                 <Pencil className="h-4 w-4 mr-2 text-gray-400" />
@@ -115,5 +94,92 @@ export default async function Page() {
         </div>
       </div>
     </main>
+  );
+}
+
+async function UserCard() {
+  const user = await currentUser();
+  if (!user) throw new Error("User not found");
+  const initial = user.firstName?.at(0) ?? "N";
+  const signalCount = await db.query.signals
+    .findMany({
+      where: (table, args) => args.eq(table.clerkId, user.id),
+    })
+    .then((signals) => signals.reduce((acc, signal) => acc + signal.amount, 0));
+
+  return (
+    <Card className="mb-6">
+      <CardContent className="pt-6 p-4 space-y-4">
+        <Avatar className="size-10">
+          <AvatarImage src={user.imageUrl} alt={initial} />
+          <AvatarFallback>{initial}</AvatarFallback>
+        </Avatar>
+        <h2 className="text-2xl font-bold mb-2">{user.fullName}</h2>
+        <p className="text-muted-foreground mb-4">
+          {user.publicMetadata.bio ?? "Welcome to my Typeshare Social Blog!"}
+        </p>
+        <Separator />
+        <div className="flex justify-between text-sm mt-4">
+          <div className="font-semibold">Signal</div>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <RadioIcon className="size-4" /> {signalCount}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+async function LeaderboardContent() {
+  const leaderboard = await db.query.signals.findMany({
+    orderBy: (table, args) => args.desc(table.amount),
+    with: {
+      userDetails: true,
+    },
+  });
+  const values = leaderboard.map((signal) => ({
+    name: `${signal.userDetails.firstName} ${signal.userDetails.lastName}`,
+    signal: signal.amount,
+    imageUrl: signal.userDetails.imageUrl,
+  }));
+  return (
+    <ul className="space-y-4">
+      {values.map((user, index) => (
+        <li key={user.name} className="flex items-center justify-between">
+          <div className="flex items-center">
+            <span className="font-medium mr-2">{index + 1}</span>
+            <Avatar className="h-8 w-8 mr-2">
+              <AvatarImage src={user.imageUrl} alt={user.name} />
+              <AvatarFallback>{user.name[0]}</AvatarFallback>
+            </Avatar>
+            <span className="text-sm">{user.name}</span>
+          </div>
+          <span className="text-red-500 text-xs flex gap-1 font-semibold">
+            <RadioIcon className="size-4 rotate-45" />
+            {user.signal}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+async function RecentDrafts() {
+  const posts = await db.query.posts.findMany({
+    where: (table, args) => args.eq(table.isDraft, true),
+    orderBy: (table, args) => args.desc(table.createdAt),
+    with: {
+      userDetails: true,
+    },
+  });
+  return (
+    <div className="flex flex-col gap-2">
+      {posts.map((post) => (
+        <Link href={`/new?postId=${post.id}`} className="text-sm text-gray-600" key={post.id}>
+          <p>{post.headline !== "" ? post.headline : "Untitled..."}</p>
+          <p className="text-xs text-gray-400">{relativeTime(post.createdAt)} • Post</p>
+        </Link>
+      ))}
+    </div>
   );
 }

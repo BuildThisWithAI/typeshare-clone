@@ -4,6 +4,7 @@ import { siteConfig } from "@/constants";
 import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import localFont from "next/font/local";
 import "./globals.css";
 
@@ -42,9 +43,11 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            {children}
-            <Toaster />
-            <TailwindIndicator />
+            <NuqsAdapter>
+              {children}
+              <Toaster />
+              <TailwindIndicator />
+            </NuqsAdapter>
           </ThemeProvider>
         </body>
       </html>
