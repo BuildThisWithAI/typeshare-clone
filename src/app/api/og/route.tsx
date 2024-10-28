@@ -16,13 +16,10 @@ export async function GET(req: NextRequest) {
   }
 }
 
-export const alt = "Blog Post Open Graph Image";
-export const size = {
+const size = {
   width: 1200,
   height: 630,
 };
-
-export const contentType = "image/png";
 
 async function getImage({ params }: { params: { slug: string } }) {
   const post = await fetchPost(params.slug);
