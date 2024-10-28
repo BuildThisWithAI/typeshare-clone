@@ -4,11 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { db } from "@/db";
-import type { SelectPost, SelectUserDetails } from "@/db/schema";
 import { currentUser } from "@clerk/nextjs/server";
-import { UTCDate } from "@date-fns/utc";
-import { formatDistance } from "date-fns";
-import { MessageCircle, MoreHorizontal, RadioIcon, UserRoundPenIcon } from "lucide-react";
+import { RadioIcon, UserRoundPenIcon } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 
@@ -78,31 +75,20 @@ export default function Page() {
 }
 
 async function PostList() {
-  const posts = await db.query.posts.findMany({
-    where: (table, args) => args.eq(table.isDraft, false),
-    orderBy: (table, args) => args.desc(table.createdAt),
-  });
   const user = await currentUser();
   if (!user) throw new Error("User not found");
+  const posts = await db.query.posts.findMany({
+    where: (table, args) =>
+      args.and(args.eq(table.isDraft, false), args.eq(table.clerkId, user.id)),
+    orderBy: (table, args) => args.desc(table.createdAt),
+    with: {
+      userDetails: true,
+    },
+  });
   return (
     <div className="space-y-2">
       {posts.map((post) => (
-        <PostCard
-          key={post.id}
-          post={{
-            ...post,
-            userDetails: {
-              id: "",
-              createdAt: "",
-              username: user.username ?? user.id,
-              firstName: user.firstName ?? "",
-              lastName: user.lastName ?? "",
-              imageUrl: user.imageUrl ?? "",
-              clerkId: user.id,
-              bio: user.publicMetadata.bio ?? "",
-            },
-          }}
-        />
+        <PostCard key={post.id} post={post} />
       ))}
     </div>
   );
