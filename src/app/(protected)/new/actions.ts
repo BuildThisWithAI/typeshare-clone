@@ -50,28 +50,3 @@ export async function savePost({
     return { error: msg, success: false };
   }
 }
-
-export async function publishPost({ id }: { id: string }) {
-  try {
-    const sess = auth();
-    if (!sess.userId) throw new Error("Unauthorized.");
-    const post = await db
-      .update(posts)
-      .set({
-        isDraft: false,
-      })
-      .where(eq(posts.id, id))
-      .returning();
-    return {
-      success: true,
-      post: post,
-    };
-  } catch (error) {
-    console.error(error);
-    let msg = "Something went wrong.";
-    if (error instanceof Error) {
-      msg = error.message;
-    }
-    return { error: msg, success: false };
-  }
-}

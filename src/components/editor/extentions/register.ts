@@ -6,6 +6,7 @@ import Paragraph from "@tiptap/extension-paragraph";
 import Placeholder from "@tiptap/extension-placeholder";
 import Text from "@tiptap/extension-text";
 import Underline from "@tiptap/extension-underline";
+import type { AnyExtension } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 
 // Add your extensions here
@@ -20,4 +21,4 @@ export const extensions = [
     openOnClick: false,
     defaultProtocol: "https",
   }),
-];
+] as AnyExtension[];

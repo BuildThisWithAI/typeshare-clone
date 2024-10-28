@@ -21,7 +21,7 @@ export function PostCard({
 }) {
   const initial = post.userDetails.firstName?.at(0) ?? "N";
   const editor = useEditor({
-    extensions: extensions,
+    extensions,
     content: post.content ? JSON.parse(post.content) : undefined,
     editable: false,
   });
