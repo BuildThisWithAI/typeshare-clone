@@ -22,8 +22,6 @@ export const size = {
   height: 630,
 };
 
-export const runtime = "edge";
-
 export const contentType = "image/png";
 
 async function getImage({ params }: { params: { slug: string } }) {
