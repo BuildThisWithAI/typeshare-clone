@@ -3,6 +3,7 @@ import { PostCard } from "@/components/cards/post";
 import { db } from "@/db";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next/types";
+import { env } from "@/env.mjs";
 
 export async function generateMetadata({
   params,
@@ -16,6 +17,9 @@ export async function generateMetadata({
 
   return {
     title: piece.headline,
+    openGraph: {
+      images: `${env.VERCEL_URL}/api/og?slug=${piece.id}`,
+    },
   };
 }
 

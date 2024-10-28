@@ -1,6 +1,20 @@
 import { db } from "@/db";
 import { formatDate } from "date-fns";
 import { ImageResponse } from "next/og";
+import type { NextRequest } from "next/server";
+
+export async function GET(req: NextRequest) {
+  try {
+    const slug = req.nextUrl.searchParams.get("slug");
+    if (!slug) throw new Error("Slug not found");
+    return getImage({ params: { slug } });
+  } catch (error) {
+    console.error(error);
+    return new Response(null, {
+      status: 400,
+    });
+  }
+}
 
 export const alt = "Blog Post Open Graph Image";
 export const size = {
@@ -8,10 +22,15 @@ export const size = {
   height: 630,
 };
 
+export const runtime = "edge";
+
 export const contentType = "image/png";
 
-export default async function Image({ params }: { params: { slug: string } }) {
+async function getImage({ params }: { params: { slug: string } }) {
   const post = await fetchPost(params.slug);
+  const fontData = await fetch(new URL("./Inter.ttf", import.meta.url)).then((res) =>
+    res.arrayBuffer(),
+  );
 
   return new ImageResponse(
     <div
@@ -24,7 +43,7 @@ export default async function Image({ params }: { params: { slug: string } }) {
         alignItems: "flex-start",
         justifyContent: "flex-start",
         padding: "40px",
-        fontFamily: "sans-serif",
+        fontFamily: "Inter",
       }}
     >
       <img
@@ -49,6 +68,7 @@ export default async function Image({ params }: { params: { slug: string } }) {
           fontSize: "24px",
           color: "#6B7280",
           marginBottom: "16px",
+          marginTop: "250px",
         }}
       >
         {post.date}
@@ -67,6 +87,7 @@ export default async function Image({ params }: { params: { slug: string } }) {
     </div>,
     {
       ...size,
+      fonts: [{ data: fontData, name: "Inter", style: "normal" }],
     },
   );
 }
