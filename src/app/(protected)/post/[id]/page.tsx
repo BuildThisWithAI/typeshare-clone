@@ -3,7 +3,6 @@ import { PostCard } from "@/components/cards/post";
 import { db } from "@/db";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next/types";
-import { env } from "@/env.mjs";
 
 export async function generateMetadata({
   params,

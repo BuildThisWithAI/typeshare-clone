@@ -86,9 +86,11 @@ async function PostList() {
     },
   });
   return (
-    <div className="space-y-2">
+    <div className="flex flex-col gap-2">
       {posts.map((post) => (
-        <PostCard key={post.id} post={post} />
+        <Link href={`/post/${post.id}`} key={post.id}>
+          <PostCard post={post} />
+        </Link>
       ))}
     </div>
   );
