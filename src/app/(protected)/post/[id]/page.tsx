@@ -18,7 +18,7 @@ export async function generateMetadata({
   return {
     title: piece.headline,
     openGraph: {
-      images: `${env.VERCEL_URL}/api/og?slug=${piece.id}`,
+      images: `/api/og?slug=${piece.id}`,
     },
   };
 }
