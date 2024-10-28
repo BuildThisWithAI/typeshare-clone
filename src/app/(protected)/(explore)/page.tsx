@@ -1,3 +1,4 @@
+import { PostCard } from "@/components/cards/post";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -47,18 +48,9 @@ export default async function Page() {
               </Link>
             </div>
           </div>
-          <div className="p-6 rounded-lg text-center">
-            <h3 className="font-semibold mb-2">Not following anyone</h3>
-            <p className="text-gray-600 mb-4">Follow authors to see their Pieces here.</p>
-            <Link href="/writings">
-              <Button
-                className="bg-background text-foreground hover:bg-background/90 rounded-lg border"
-                size="sm"
-              >
-                Explore Writing
-              </Button>
-            </Link>
-          </div>
+          <Suspense>
+            <PostList />
+          </Suspense>
         </div>
 
         {/* Right Sidebar */}
@@ -178,6 +170,40 @@ async function RecentDrafts() {
         <Link href={`/new?postId=${post.id}`} className="text-sm text-gray-600" key={post.id}>
           <p>{post.headline !== "" ? post.headline : "Untitled..."}</p>
           <p className="text-xs text-gray-400">{relativeTime(post.createdAt)} • Post</p>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+async function PostList() {
+  const posts = await db.query.posts.findMany({
+    limit: 100,
+    orderBy: (table, args) => args.desc(table.createdAt),
+    with: {
+      userDetails: true,
+    },
+  });
+  if (posts.length === 0)
+    return (
+      <div className="p-6 rounded-lg text-center">
+        <h3 className="font-semibold mb-2">Not following anyone</h3>
+        <p className="text-gray-600 mb-4">Follow authors to see their Pieces here.</p>
+        <Link href="/writings">
+          <Button
+            className="bg-background text-foreground hover:bg-background/90 rounded-lg border"
+            size="sm"
+          >
+            Explore Writing
+          </Button>
+        </Link>
+      </div>
+    );
+  return (
+    <div className="flex flex-col gap-2">
+      {posts.map((post) => (
+        <Link href={`/post/${post.id}`} key={post.id}>
+          <PostCard post={post} />
         </Link>
       ))}
     </div>
