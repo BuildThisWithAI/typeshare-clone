@@ -1,7 +1,7 @@
 import { UTCDate } from "@date-fns/utc";
 import { createId } from "@paralleldrive/cuid2";
 import { relations, sql } from "drizzle-orm";
-import { sqliteTable } from "drizzle-orm/sqlite-core";
+import { primaryKey, sqliteTable } from "drizzle-orm/sqlite-core";
 
 export const signals = sqliteTable("signals", (t) => ({
   id: t.text().primaryKey().$defaultFn(createId),
@@ -31,6 +31,8 @@ export const collections = sqliteTable("collections", (t) => ({
   id: t.text().primaryKey().$defaultFn(createId),
   clerkId: t.text().notNull().unique(),
   name: t.text().notNull(),
+  description: t.text().notNull(),
+  isPrivate: t.integer({ mode: "boolean" }).notNull().default(false),
   createdAt: t
     .text()
     .notNull()
@@ -49,6 +51,28 @@ export const posts = sqliteTable("posts", (t) => ({
     .$defaultFn(() => new UTCDate().toISOString()),
 }));
 
+export const postsToCollection = sqliteTable(
+  "posts_to_collection",
+  (t) => ({
+    collectionId: t.text().notNull(),
+    postId: t.text().notNull(),
+  }),
+  (t) => ({
+    pk: primaryKey({ columns: [t.collectionId, t.postId] }),
+  }),
+);
+
+export const postsToCollectionRelations = relations(postsToCollection, (t) => ({
+  collection: t.one(collections, {
+    fields: [postsToCollection.collectionId],
+    references: [collections.id],
+  }),
+  post: t.one(posts, {
+    fields: [postsToCollection.postId],
+    references: [posts.id],
+  }),
+}));
+
 export const userDetailsRelations = relations(userDetails, (t) => ({
   signals: t.one(signals, {
     fields: [userDetails.clerkId],
@@ -62,6 +86,11 @@ export const postsRelations = relations(posts, (t) => ({
     fields: [posts.clerkId],
     references: [userDetails.clerkId],
   }),
+  postsToCollection: t.many(postsToCollection),
+}));
+
+export const collectionsRelations = relations(collections, (t) => ({
+  postsToCollection: t.many(postsToCollection),
 }));
 
 export const signalsRelations = relations(signals, (t) => ({
