@@ -23,9 +23,6 @@ const size = {
 
 async function getImage({ params }: { params: { slug: string } }) {
   const post = await fetchPost(params.slug);
-  const fontData = await fetch(new URL("./Inter.ttf", import.meta.url)).then((res) =>
-    res.arrayBuffer(),
-  );
 
   return new ImageResponse(
     <div
@@ -38,7 +35,7 @@ async function getImage({ params }: { params: { slug: string } }) {
         alignItems: "flex-start",
         justifyContent: "flex-start",
         padding: "40px",
-        fontFamily: "Inter",
+        fontFamily: "monospace",
       }}
     >
       <img
@@ -82,7 +79,6 @@ async function getImage({ params }: { params: { slug: string } }) {
     </div>,
     {
       ...size,
-      fonts: [{ data: fontData, name: "Inter", style: "normal" }],
     },
   );
 }
