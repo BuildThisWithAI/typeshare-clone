@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import EDITOR from "./editor";
+import { PostCreator } from "./post-creator";
 import { searchParamsCache } from "./searchParams";
 
 type PageProps = {
@@ -19,12 +19,7 @@ export default async function EditorPage({ searchParams }: PageProps) {
   }
   return (
     <div className="flex justify-center w-full min-h-screen px-12 py-2">
-      <EDITOR
-        headline=""
-        completionApi="/api/generate"
-        className="bg-inherit p-0 rounded-none"
-        defaultValue={postContent}
-      />
+      <PostCreator content={postContent} />
     </div>
   );
 }

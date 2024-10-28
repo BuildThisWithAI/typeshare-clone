@@ -20,6 +20,7 @@ export async function savePost({
           clerkId: sess.userId,
           content,
           headline,
+          isDraft: false,
         })
         .returning();
       return {
