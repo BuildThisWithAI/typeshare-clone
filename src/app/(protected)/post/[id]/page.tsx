@@ -2,6 +2,22 @@ import { BackButton } from "@/components/buttons/back";
 import { PostCard } from "@/components/cards/post";
 import { db } from "@/db";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next/types";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { id: string };
+}): Promise<Metadata> {
+  const piece = await db.query.posts.findFirst({
+    where: (table, args) => args.eq(table.id, params.id),
+  });
+  if (!piece) throw new Error("Post not found");
+
+  return {
+    title: piece.headline,
+  };
+}
 
 export default async function Page({ params }: { params: { id: string } }) {
   const piece = await db.query.posts.findFirst({

@@ -1,8 +1,7 @@
 import { db } from "@/db";
+import { formatDate } from "date-fns";
 import { ImageResponse } from "next/og";
 
-// Route segment config
-// Image metadata
 export const alt = "Blog Post Open Graph Image";
 export const size = {
   width: 1200,
@@ -11,44 +10,60 @@ export const size = {
 
 export const contentType = "image/png";
 
-// Image generation
-export default async function Image({ params }: { params: { id: string } }) {
-  // Fetch post data (replace with your actual data fetching logic)
-  const post = await fetchPost(params.id);
+export default async function Image({ params }: { params: { slug: string } }) {
+  const post = await fetchPost(params.slug);
 
   return new ImageResponse(
     <div
       style={{
-        background: "linear-gradient(to bottom right, #4F46E5, #7C3AED)",
+        background: "white",
         width: "100%",
         height: "100%",
         display: "flex",
         flexDirection: "column",
         alignItems: "flex-start",
-        justifyContent: "center",
-        padding: "40px 80px",
+        justifyContent: "flex-start",
+        padding: "40px",
         fontFamily: "sans-serif",
       }}
     >
+      <img
+        src={post.creatorAvatar}
+        alt="Creator Avatar"
+        style={{
+          background: "#065F46",
+          width: "80px",
+          height: "80px",
+          borderRadius: "40px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "white",
+          fontSize: "40px",
+          fontWeight: "bold",
+          marginBottom: "40px",
+        }}
+      />
+      <div
+        style={{
+          fontSize: "24px",
+          color: "#6B7280",
+          marginBottom: "16px",
+        }}
+      >
+        {post.date}
+      </div>
       <h1
         style={{
           fontSize: "64px",
           fontWeight: "bold",
-          color: "white",
-          marginBottom: "20px",
+          color: "#111827",
+          margin: "0",
           lineHeight: 1.2,
         }}
       >
         {post.title}
       </h1>
-      <p
-        style={{
-          fontSize: "32px",
-          color: "rgba(255, 255, 255, 0.8)",
-        }}
-      >
-        By {post.creator}
-      </p>
     </div>,
     {
       ...size,
@@ -56,7 +71,6 @@ export default async function Image({ params }: { params: { id: string } }) {
   );
 }
 
-// Mock function to fetch post data (replace with actual data fetching logic)
 async function fetchPost(id: string) {
   const post = await db.query.posts.findFirst({
     where: (table, args) => args.eq(table.id, id),
@@ -66,9 +80,10 @@ async function fetchPost(id: string) {
   });
   if (!post) throw new Error("Post not found");
 
-  // In a real application, you would fetch this data from your API or database
   return {
     title: post.headline,
+    creatorAvatar: post.userDetails.imageUrl,
+    date: formatDate(new Date(post.createdAt), "LLLL d, yyyy"),
     creator: `${post.userDetails.firstName} ${post.userDetails.lastName}`,
   };
 }
